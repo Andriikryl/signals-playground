@@ -1,4 +1,4 @@
-import { trackDependency } from './context'
+import { batch, trackDependency } from './context'
 
 type Listener<T> = (value: T) => void
 
@@ -21,7 +21,9 @@ export const signal = <T>(initial: T) => {
     set value(next: T) {
       if (current === next) return
       current = next
-      for (const listener of Array.from(listeners)) listener(next)
+      batch(() => {
+        for (const listener of Array.from(listeners)) listener(next)
+      })
     },
     subscribe,
   }

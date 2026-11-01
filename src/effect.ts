@@ -1,4 +1,4 @@
-import { stack } from './context'
+import { schedule, stack } from './context'
 
 export const effect = (fn: () => void) => {
   const sources = new Set<() => void>()
@@ -13,7 +13,7 @@ export const effect = (fn: () => void) => {
     if (disposed) return
     cleanup()
     stack.push({
-      markDirty: run,
+      markDirty: () => schedule(run),
       addSource: (unsubscribe) => sources.add(unsubscribe),
     })
     try {
