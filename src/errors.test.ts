@@ -47,3 +47,11 @@ describe('cycles', () => {
     expect(() => selfish.value).toThrow(/cycle/i)
   })
 })
+
+describe('cycles across computeds', () => {
+  it('detects a cycle through two computeds', () => {
+    const a: { value: number } = computed(() => b.value + 1)
+    const b: { value: number } = computed(() => a.value + 1)
+    expect(() => a.value).toThrow(/cycle/i)
+  })
+})

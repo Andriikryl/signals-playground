@@ -5,6 +5,7 @@ export const computed = <T>(fn: () => T) => {
   const sources = new Set<() => void>()
   let cached: T
   let dirty = true
+  let computing = false
 
   const markDirty = () => {
     if (dirty) return
@@ -20,6 +21,8 @@ export const computed = <T>(fn: () => T) => {
   }
 
   const recompute = () => {
+    if (computing) throw new Error('Cycle detected in computed')
+    computing = true
     sources.forEach((cleanup) => cleanup())
     sources.clear()
     stack.push({ markDirty, addSource: (cleanup) => sources.add(cleanup) })
@@ -28,6 +31,7 @@ export const computed = <T>(fn: () => T) => {
       dirty = false
     } finally {
       stack.pop()
+      computing = false
     }
   }
 
