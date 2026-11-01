@@ -17,6 +17,8 @@ const pending = new Set<() => void>()
 let depth = 0
 let flushing = false
 
+const MAX_FLUSH_PASSES = 100
+
 export const schedule = (job: () => void) => {
   pending.add(job)
 }
@@ -24,14 +26,28 @@ export const schedule = (job: () => void) => {
 const flush = () => {
   if (flushing) return
   flushing = true
-  try {
-    while (pending.size > 0) {
-      const jobs = Array.from(pending)
+  const errors: unknown[] = []
+  let passes = 0
+  while (pending.size > 0) {
+    if (++passes > MAX_FLUSH_PASSES) {
       pending.clear()
-      for (const job of jobs) job()
+      errors.push(new Error('Effect loop detected'))
+      break
     }
-  } finally {
-    flushing = false
+    const jobs = Array.from(pending)
+    pending.clear()
+    for (const job of jobs) {
+      try {
+        job()
+      } catch (error) {
+        errors.push(error)
+      }
+    }
+  }
+  flushing = false
+  if (errors.length === 1) throw errors[0]
+  if (errors.length > 1) {
+    throw new AggregateError(errors, 'Multiple effects failed')
   }
 }
 

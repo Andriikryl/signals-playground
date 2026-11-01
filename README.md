@@ -65,6 +65,8 @@ stop()
 
 Groups several writes into one pass: effects run once, after the outermost `batch` finishes. Returns whatever `fn` returns. Every signal write already runs inside a `batch` internally.
 
+If effects throw while the queue is running, the remaining effects still run. Afterwards the single error is rethrown from the write (or `batch`), or an `AggregateError` if several effects failed.
+
 ```ts
 batch(() => {
   a.value = 2
@@ -95,14 +97,13 @@ pnpm typecheck   # tsc --noEmit
 
 ## Known limitations
 
-- An effect that writes to a signal it also reads runs forever. There is no iteration limit in the effect queue yet.
+- Effects that keep retriggering each other are cut off after 100 passes with `Effect loop detected`. The limit is a fixed constant, not configurable.
 - Updates are synchronous. There is no async scheduling and no `untracked`.
 - No custom equality: values are compared with `===`.
 - No cleanup callbacks inside effects and no ownership tree for nested effects.
 
 ## Roadmap
 
-- Guard the effect queue against infinite loops.
 - Bind signals to the DOM (`bind`, a tiny `h()` helper) and build a small app on top.
 - Compare against `@vue/reactivity` and `alien-signals`.
 
